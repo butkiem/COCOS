@@ -23,7 +23,6 @@ use Config::Simple;
 use List::MoreUtils qw( pairwise );
 use List::MoreUtils qw( each_array );
 
-my $debug_modus = get_config('debug_modus');
 my $output_type = get_config('output_type');
 my $termination_code = 0;
 
@@ -40,8 +39,7 @@ sub get_header_info {
         TRANS_RET_PCT => "retained unaltered transcript in percent (COCOS Plugin)",
         TRANS_LEN => "length of unaltered transcript in nucleotide bases (COCOS Plugin)",
         ALT_AA_SEQ => "length of alterated amino acid sequence (COCOS Plugin)",
-        TERM_TYPE => "termination type of sequence alteration determination (COCOS Plugin)",       
-        FILE_NAME => "file name (COCOS Plugin)"       
+        TERM_TYPE => "termination type of sequence alteration determination (COCOS Plugin)"       
     };
 }
 
@@ -66,8 +64,6 @@ sub run {
 
     if($variant_cdna_pos !~ /^-$/ && $variant_cds_pos !~ /^-$/) {
         $variant_cdna_pos = (split /-/, $variant_cdna_pos)[0]; 
-        $debug_modus && print "\n\ntranscript: ",$transcript_id,"\n";
-        $debug_modus && print "variant_cdna_pos: ",$variant_cdna_pos,"\n";
 
         $result = process_transcript( $transcript_variation_allele, $variant_cdna_pos);
 
@@ -76,8 +72,6 @@ sub run {
         my $pos = ($transcript_variation_allele->transcript->get_TranscriptMapper->cdna2genomic($variant_cdna_pos,$variant_cdna_pos))[0]->start;
 	my $chr_pos = $chr."_".$pos;
         my $allele_str = $transcript_variation_allele->allele_string;
-        $debug_modus && print "FILENAME: ",$chr_pos,"\n";
-        $debug_modus && print "result len: ",length $result,"\n";
 
         if($result ne '') {
             write_to_file($output_type, $chr, $pos, get_config('output_path'), $transcript_id, $uploaded_variation, $allele_str, $result);
@@ -117,8 +111,6 @@ sub write_to_file {
         $filename = $file_path.'/'.$chr.'_'.$pos.".fasta";
     }
 
-    $debug_modus && print "OUT: ".$chr."\t".$pos."\t".$trans_id."\t".$uploaded_var."\t".$allele_str."\t".$seq_len."\t".$seq."\n";
-
     if($output_type eq 'tsv') {
         $filename = $file_path.'/cocos_results.tsv'; 
 	$content .= $chr."\t".$pos."\t".$trans_id."\t".$uploaded_var."\t".$allele_str."\t".$seq_len."\t".$seq."\n";
@@ -147,7 +139,6 @@ sub translate_seq_string {
         return $seq_object->translate->seq();
     }
 
-    $debug_modus && print "\nNothing to translate!\n";
     return '';
 }
 
@@ -217,7 +208,6 @@ sub compare_codon_lists {
 
         # stop codon before variant is seen
         if(!$addition_started && is_stop_codon($codon_b)) {
-            $debug_modus && print $codon_a," == ",$codon_b," STOP\n";
             $stop_codon_cnt += 1;
             $termination_code = 2;
             last;
@@ -225,7 +215,6 @@ sub compare_codon_lists {
 
         # if there is no codon change compared to reference sequence 
         if(!$addition_started && ($codon_a eq $codon_b)) {
-            $debug_modus && print $codon_a," == ",$codon_b,"\n";   
             next;
         } else {
             $addition_started = 1;
@@ -233,24 +222,16 @@ sub compare_codon_lists {
 
         # stop codon after variant
         if(is_stop_codon($codon_b)) {
-            $debug_modus && print $codon_a," ~ ",$codon_b," STOP ADD\n";
             $stop_codon_cnt += 1;
             $termination_code = 3;
             last;
         } else {
-            
-	    if(is_stop_codon($codon_a)) {
-	    	$debug_modus && print $codon_a," ~ ",$codon_b," ORG STOP ADD\n";
-	    } else {
-	    	$debug_modus && print $codon_a," ~ ",$codon_b," ADD\n";
-	    }
             $added_sequence .= $codon_b;
         }
     }
 
     # if no stop codon was seen 
     if($stop_codon_cnt < 1) {
-        $debug_modus && print "No final stop codon found. Dismiss.\n";
         $termination_code = 4;
         return "";
     }
@@ -271,10 +252,6 @@ sub process_sequence {
     $ref_variant_seq =~ s/-//;
     my $variant = $transcript_variation_allele->variation_feature_seq;
 
-    $debug_modus && print "allele_string: ",$transcript_variation_allele->allele_string,"\n";
-    $debug_modus && print "variant: ",$variant,"\n";
-
-    # my ($sequence, $ref_variant_seq, $variant, $exon_start, $exon_end, $var_start, $var_end) = @_;
     my $condon_seq_with_variant = insert_variant_into_exon
     (
         $seq,
@@ -287,17 +264,12 @@ sub process_sequence {
     );
 
 
-    $debug_modus && print "len condon_seq_with_variant: ",length $condon_seq_with_variant,"!\n";
-
     my $condon_seq_wo_variant = uc $seq;#= initialize_exon_sequence($exon);
 
     my ($condon_seq_with_variant_pad,$condon_seq_wo_variant_pad) = pad_sequence_pair($condon_seq_with_variant,$condon_seq_wo_variant);
 
     my @codons_w_var = codon_ize_sequence($condon_seq_with_variant_pad);
     my @codons_wo_var = codon_ize_sequence($condon_seq_wo_variant_pad);
-
-    $debug_modus && print "scalar codons_w_var: ",scalar @codons_w_var,"!\n";
-    $debug_modus && print "scalar codons_wo_var: ",scalar @codons_wo_var,"!\n";
 
     return translate_seq_string( compare_codon_lists(\@codons_w_var, \@codons_wo_var));
 }
