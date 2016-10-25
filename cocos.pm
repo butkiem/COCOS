@@ -19,11 +19,9 @@ use warnings;
 
 use base qw(Bio::EnsEMBL::Variation::Utils::BaseVepPlugin);
 use Bio::Perl;
-use Config::Simple;
 use List::MoreUtils qw( pairwise );
 use List::MoreUtils qw( each_array );
 
-my $output_type = get_config('output_type');
 my $termination_code = 0;
 
 sub version {
@@ -43,47 +41,51 @@ sub get_header_info {
     };
 }
 
-sub get_config {
-    my ($param) = shift;
-    my $cfg = new Config::Simple('cocos.cfg');
-    my $param_value = $cfg->param($param);
-    return $param_value;
-}
-
 sub run {
     my ($self, $transcript_variation_allele, $vep_line) = @_;
 
+    my $trans = $transcript_variation_allele->transcript;
     my $variant_cdna_pos = $vep_line->{'cDNA_position'};
     my $variant_cds_pos = $vep_line->{'CDS_position'};
     my $transcript_id = $vep_line->{'Feature'};
     my $uploaded_variation = $vep_line->{'Uploaded_variation'};
+    my $consequence = $vep_line->{'Consequence'};
     $uploaded_variation =~ s/\//_/g;
 
-    my $result = '';
-    my $trans_len_pct_retained = 0;
+    return {} if $consequence !~ /stop_lost/ && $consequence !~ /frame/ || $consequence =~ /NMD/;
 
     if($variant_cdna_pos !~ /^-$/ && $variant_cds_pos !~ /^-$/) {
         $variant_cdna_pos = (split /-/, $variant_cdna_pos)[0]; 
 
-        $result = process_transcript( $transcript_variation_allele, $variant_cdna_pos);
+        my($org_trans_seq, $result) = process_transcript( $transcript_variation_allele);
+        my $result_aa = translate_seq_string($result);
 
-        # get chr and pos for current variant
+	# get chr and pos for current variant
         my $chr = $transcript_variation_allele->transcript->feature_Slice->seq_region_name;
         my $pos = ($transcript_variation_allele->transcript->get_TranscriptMapper->cdna2genomic($variant_cdna_pos,$variant_cdna_pos))[0]->start;
 	my $chr_pos = $chr."_".$pos;
         my $allele_str = $transcript_variation_allele->allele_string;
+	my $delim = "|";
 
-        if($result ne '') {
-            write_to_file($output_type, $chr, $pos, get_config('output_path'), $transcript_id, $uploaded_variation, $allele_str, $result);
-        }
+	my $fasta_header = "chr=".$chr.$delim;
+	$fasta_header .= "pos=".$pos.$delim;
+        $fasta_header .= "".$transcript_id.$delim;
+	$fasta_header .= "".$consequence.$delim;
+	$fasta_header .= "var_pos=".(length $org_trans_seq).$delim;
+	$fasta_header .= "tr_len=".((length transcript_coding_seq($trans))-3).$delim;
+	$fasta_header .= "num_aa=".(length $result_aa).$delim;
+	$fasta_header .= "".$allele_str;
+	
+        write_to_fasta('./', $fasta_header, $result);
+        write_to_fasta('./', $fasta_header, $result_aa);
 
 	my $trans = $transcript_variation_allele->transcript;
-        $trans_len_pct_retained = ($variant_cdna_pos - $trans->cdna_coding_start)/($trans->cdna_coding_end - $trans->cdna_coding_start);	
+        my $trans_len_pct_retained = ((length $org_trans_seq) + (length $result)) / (length transcript_coding_seq($trans));	
 	    
         return {
-            TRANS_LEN => ($trans_len_pct_retained > 0 && length $result > 0 ? $trans->length : "N/A"),
-            TRANS_RET_PCT => ($trans_len_pct_retained > 0 && length $result > 0 ? substr($trans_len_pct_retained,0,7) : "N/A"),
-            ALT_AA_SEQ => (length $result > 0 ? length $result : 'N/A'),
+            TRANS_LEN => length transcript_coding_seq($trans),
+            TRANS_RET_PCT => $trans_len_pct_retained,
+            ALT_AA_SEQ => $result_aa,
 	    TERM_TYPE => $termination_code,
 	    FILE_NAME => $chr_pos
         };
@@ -92,30 +94,19 @@ sub run {
     return {};
 }
 
-sub write_to_file {
-    my ($output_type, $chr, $pos, $file_path, $trans_id, $uploaded_var, $allele_str, $seq) = @_;
-
-    my $content = '';
-    my $filename = '';
+#write header and seq to fasta file
+sub write_to_fasta {
+    my ($file_path, $fasta_header, $seq) = @_;
     my $seq_len = length $seq;
 
-    if($output_type eq 'fasta') {
-	# default fasta length of 80 characters per line
-        my $len = 80;
-
-    	$content .= ">$chr $pos $trans_id $seq_len $uploaded_var $allele_str\n";
-    	while (my $chunk = substr($seq, 0, $len, "")) {
-            $content .= "$chunk\n";
-    	}
+    # default fasta length of 80 characters per line
+    my $len = 80;
+    my $content = ">$fasta_header\n";
+    while (my $chunk = substr($seq, 0, $len, "")) {
+    	$content .= "$chunk\n";
+    }
  
-        $filename = $file_path.'/'.$chr.'_'.$pos.".fasta";
-    }
-
-    if($output_type eq 'tsv') {
-        $filename = $file_path.'/cocos_results.tsv'; 
-	$content .= $chr."\t".$pos."\t".$trans_id."\t".$uploaded_var."\t".$allele_str."\t".$seq_len."\t".$seq."\n";
-    }
-
+    my $filename = $file_path . "cocos.fasta";
     my $die_msg = "Could not open file '$filename'!";
     $die_msg .= " Please check if file premissions are correct or the appropriate directory exists!";
     open(my $fh, '>>:encoding(UTF-8)', $filename) or die $die_msg;
@@ -142,17 +133,18 @@ sub translate_seq_string {
     return '';
 }
 
-
-# iterate through all exons and find exon where variant is located in a transcript
-sub process_transcript {
-    my ($transcript_variation_allele, $variant_cdna_pos) = @_;
-    return process_sequence( $transcript_variation_allele); 
+#get coding seq excluding 5'UTR but including 3'UTR
+sub transcript_seq_spliced_without_5prime_utr {
+   my ($tr) = @_;
+   my $sequence = substr $tr->spliced_seq("soft_mask"), $tr->cdna_coding_start()-1, length $tr->spliced_seq("soft_mask");
+   return $sequence;
 }
 
-sub transcript_seq_spliced_without_5prime_utr {
-
+#get transcript coding region
+sub transcript_coding_seq {
    my ($tr) = @_;
-   my $sequence = substr $tr->spliced_seq("soft_mask"), $tr->cdna_coding_start()-1, length $tr->spliced_seq("soft_mask"); 
+   my $sequence = $tr->spliced_seq("soft_mask");
+   $sequence =~ s/[a-z]//g; 
    return $sequence;
 }
 
@@ -163,7 +155,6 @@ sub insert_variant_into_exon {
     return "" if not defined($var_end);
 
     $variant =~ s/-//;
-
     my $before_variant = substr($sequence,0,$var_start - $exon_start);
     my $after_variant = substr($sequence, $var_end - $exon_start + 1, $exon_end - $var_end);
     my $variant_in_ref_seq = substr($sequence,$var_start - $exon_start,$var_end - $exon_start + 1 - $var_start + $exon_start); 
@@ -171,26 +162,26 @@ sub insert_variant_into_exon {
     return $before_variant . $variant . $after_variant;
 }
 
+#split seq in tri-grams denoting a list of codons
 sub codon_ize_sequence {
     my ($sequence) = @_;
     $sequence =~ s/(\w{3})/$1 /g;
     return split(/ /,$sequence);
 }
 
-
+#determine whether condon is a stop-codon
 sub is_stop_codon {
     my ($codon) = @_;
     $codon = uc $codon;
     return ($codon =~ /TAG/) || ($codon =~ /TAA/) || ($codon =~ /TGA/);
 }
 
+#pad the shorter of two sequences with additional charcters 
 sub pad_sequence_pair {
-    my ($seq_a, $seq_b) = @_;
-    
+    my ($seq_a, $seq_b) = @_;   
     my $diff = (length $seq_a) - (length $seq_b);
-    $seq_a .= "X" x ($diff*-1) if $diff*-1;
+    $seq_a .= "X" x ($diff * -1) if $diff * -1;
     $seq_b .= "X" x ($diff) if $diff;
-
     return ($seq_a, $seq_b)
 }
 
@@ -198,13 +189,14 @@ sub compare_codon_lists {
     my @codons_w_variant = @{$_[0]};
     my @codons_wo_variant = @{$_[1]};
 
+    my $wt_sequence = "";
     my $added_sequence = "";
     my $stop_codon_cnt = 0;
     my $addition_started = 0;
 
     my $iter = each_array(@codons_wo_variant, @codons_w_variant);
 
-    while ( my ($codon_a, $codon_b) = $iter->()) {
+    while( my($codon_a, $codon_b) = $iter->()) {
 
         # stop codon before variant is seen
         if(!$addition_started && is_stop_codon($codon_b)) {
@@ -215,7 +207,8 @@ sub compare_codon_lists {
 
         # if there is no codon change compared to reference sequence 
         if(!$addition_started && ($codon_a eq $codon_b)) {
-            next;
+            $wt_sequence .= $codon_a;
+	    next;
         } else {
             $addition_started = 1;
         }
@@ -230,24 +223,21 @@ sub compare_codon_lists {
         }
     }
 
-    # if no stop codon was seen 
+    # if no stop codon was seen at all
     if($stop_codon_cnt < 1) {
         $termination_code = 4;
-        return "";
+        return "","";
     }
 
     # final viable captured sequence
-    return $added_sequence;
+    return ($wt_sequence, $added_sequence);
 }
 
 
-sub process_sequence {
+sub process_transcript {
     my ( $transcript_variation_allele) = @_;
-
     my $transcript = $transcript_variation_allele->transcript();
-
     my $seq = transcript_seq_spliced_without_5prime_utr($transcript);
-
     my $ref_variant_seq = (split /\//, $transcript_variation_allele->allele_string)[0];
     $ref_variant_seq =~ s/-//;
     my $variant = $transcript_variation_allele->variation_feature_seq;
@@ -263,15 +253,13 @@ sub process_sequence {
         $transcript_variation_allele->transcript_variation->cdna_end
     );
 
-
-    my $condon_seq_wo_variant = uc $seq;#= initialize_exon_sequence($exon);
-
+    my $condon_seq_wo_variant = uc $seq;
     my ($condon_seq_with_variant_pad,$condon_seq_wo_variant_pad) = pad_sequence_pair($condon_seq_with_variant,$condon_seq_wo_variant);
-
     my @codons_w_var = codon_ize_sequence($condon_seq_with_variant_pad);
     my @codons_wo_var = codon_ize_sequence($condon_seq_wo_variant_pad);
 
-    return translate_seq_string( compare_codon_lists(\@codons_w_var, \@codons_wo_var));
+    #return translate_seq_string( compare_codon_lists(\@codons_w_var, \@codons_wo_var));
+    return compare_codon_lists(\@codons_w_var, \@codons_wo_var);
 }
 
 1;
