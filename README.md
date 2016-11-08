@@ -1,7 +1,9 @@
 
 
 # COCOS: Codon Consequence Scanner 
-Ensembl Variant Effect Prefictor (VEP) plugin for annotating reading frame changes induced by stop-lost and frame-shift variants
+COCOS is a plugin for the Ensembl Variant Effect Prefictor (VEP) plugin for annotating reading frame changes.
+The COCOS plugin captures Amino Acid sequence alterations stemming from variants that produce an altered reading frame, e.g. stop-lost variants and small genetic Insertion and Deletions (InDels).  As a result, the stop codon of the transcript may be changed and loses its functionality. The coding sequence is terminated when a new subsequent stop-codon is reached, terminates the translation process. 
+
 
 ## Install VEP on your system
 find installation instructions here (<a href=http://useast.ensembl.org/info/docs/tools/vep/script/vep_download.html>link</a>)
@@ -11,3 +13,6 @@ find installation instructions here (<a href=http://useast.ensembl.org/info/docs
 ```
 ./variant_effect_predictor.pl -i /path/your/input.vcf --cache --offline --plugin cocos
 ```
+
+## Testing COCOS
+
