@@ -22,10 +22,15 @@ COCOS can be tested by using the exa
 ## Testing using a virtual machine
 
 Ensembl provides a <a href="ftp://ftp.ensembl.org/pub/current_virtual_machine" class="external-link">virtual machine</a> for virtual box (free). VEP is pre-installed and can be readily used.
-The user can install the virtual machine machine with 5 simple steps outline on the Ensembl website - <a href=http://www.ensembl.org/info/data/virtual_machine.html>link</a>.
+The user can download and install the virtual machine machine with 5 simple steps outline on the Ensembl website - <a href=http://www.ensembl.org/info/data/virtual_machine.html>link</a>.
 <li>Obtain VirtualBox</li>
 <li>Download and import the virtual machine</li>
 <li>Create shared folders</li>
 <li>Start and verify the Ensembl installation</li>
 <li>(Optional) Resize virtual disk</li> 
+
+Note: the virtual machine image is about 2.6GB in size.
+
+
+
 
