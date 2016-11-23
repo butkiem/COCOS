@@ -16,12 +16,12 @@ find installation instructions here (<a href=http://useast.ensembl.org/info/docs
 
 ## Testing COCOS
 
-COCOS can be tested by using the exa
+COCOS can be tested by using the example .vcf file in the 'example' folder.
 
 
-## Testing using a virtual machine
+## Testing COCOS using a virtual machine
 
-Ensembl provides a <a href="ftp://ftp.ensembl.org/pub/current_virtual_machine" class="external-link">virtual machine</a> for virtual box (free). VEP is pre-installed and can be readily used.
+Ensembl provides a <a href="ftp.ensembl.org/pub/current_virtual_machine">virtual machine</a> for virtual box (free). VEP is pre-installed and can be readily used.
 The user can download and install the virtual machine machine with 5 simple steps outline on the Ensembl website - <a href=http://www.ensembl.org/info/data/virtual_machine.html>link</a>.
 <li>Obtain VirtualBox</li>
 <li>Download and import the virtual machine</li>
