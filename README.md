@@ -21,8 +21,7 @@ COCOS can be tested by using the example .vcf file in the 'example' folder.
 
 ## Testing COCOS using a virtual machine
 
-Ensembl provides a <a href="ftp.ensembl.org/pub/current_virtual_machine">virtual machine</a> for virtual box (free). VEP is pre-installed and can be readily used.
-The user can download and install the virtual machine machine with 5 simple steps outline on the Ensembl website - <a href=http://www.ensembl.org/info/data/virtual_machine.html>link</a>.
+Ensembl provides a virtual machine (ftp.ensembl.org/pub/current_virtual_machine) for virtual box (free). VEP is pre-installed and can be readily used. The user can download and install the virtual machine machine with 5 simple steps outline on the Ensembl website - <a href=http://www.ensembl.org/info/data/virtual_machine.html>link</a>.
 <li>Obtain VirtualBox</li>
 <li>Download and import the virtual machine</li>
 <li>Create shared folders</li>
