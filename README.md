@@ -19,14 +19,13 @@ find installation instructions here (<a href=http://useast.ensembl.org/info/docs
 COCOS can be tested by using the example .vcf file in the 'example' folder.
 
 
-## Testing COCOS using a virtual machine
+## Testing COCOS using the Ensembl virtual machine via VirtualBox
 
-Ensembl provides a virtual machine (ftp.ensembl.org/pub/current_virtual_machine) for virtual box (free). VEP is pre-installed and can be used immediately. The user can download and install the virtual machine machine with 5 simple steps outline on this <a href=http://www.ensembl.org/info/data/virtual_machine.html>Ensembl website</a>.
+Ensembl provides a virtual machine (ftp.ensembl.org/pub/current_virtual_machine) for <a href="https://www.virtualbox.org/">VirtualBox</a>. On the virtual machine, VEP is pre-installed and can be used immediately. The user can download and install the virtual machine machine with 5 simple steps outline on this <a href=http://www.ensembl.org/info/data/virtual_machine.html>Ensembl website</a>.
 
-Note: the virtual machine image is about 2.6GB in size.
+Note: the virtual machine image is about 2.6GB in size. The following step are tested on a ubuntu 14.04 linux environment. Once you have VirtualBox installed and the Ensembl virtual machine started, you may proceed with the follwoing steps:
 
-```
-<li>ftp://ftp.ensembl.org/pub/current_virtual_machine</li>
-```
+<li>download ensembl virtual machine</li>
+
 
 
