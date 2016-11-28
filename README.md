@@ -23,14 +23,10 @@ COCOS can be tested by using the example .vcf file in the 'example' folder.
 
 Ensembl provides a virtual machine (ftp.ensembl.org/pub/current_virtual_machine) for virtual box (free). VEP is pre-installed and can be used immediately. The user can download and install the virtual machine machine with 5 simple steps outline on this <a href=http://www.ensembl.org/info/data/virtual_machine.html>Ensembl website</a>.
 
-<li>Obtain VirtualBox</li>
-<li>Download and import the virtual machine</li>
-<li>Create shared folders</li>
-<li>Start and verify the Ensembl installation</li>
-<li>(Optional) Resize virtual disk</li> 
-
 Note: the virtual machine image is about 2.6GB in size.
 
-
+```
+<li>ftp://ftp.ensembl.org/pub/current_virtual_machine</li>
+```
 
 
