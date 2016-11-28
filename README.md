@@ -25,22 +25,22 @@ Ensembl provides a virtual machine (ftp.ensembl.org/pub/current_virtual_machine)
 
 Note: the virtual machine image is about 2.6GB in size. The following step are tested on a ubuntu 14.04 linux environment. Once you have VirtualBox installed and the Ensembl virtual machine started, you may proceed with the follwoing steps:
 
-<li>start</li>
-double click the icon 'VEP terminal' on the Ensembl ubuntu desktop. It will lead you to the path: /home/ensembl/ensembl-api-folder-86/ensembl-tools/scripts/variant_effect_predictor
+###start
+Once you started the virtual machine, double click the icon 'VEP terminal' on the Ensembl ubuntu desktop. It will lead you to the path: /home/ensembl/ensembl-api-folder-86/ensembl-tools/scripts/variant_effect_predictor
 
-<li>install vep cache file for homosapiens</li>
+###install vep cache file for homosapiens
 ```
 perl INSTALL.pl 
 ```
 skip installing the API; download the VEP cache file for homosapiens `homo_sapiens_vep_86_GRCh37.tar.gz` (choice: 44)
 
-<li>get cocos plugin</li>
+###get cocos plugin
 ```
 git clone git://github.com/butkiem/COCOS.git cocos-github
 ```
 This will create a clone cocos github repository in the folder: ./cocos-github
 
-<li>run VEP with cocos</li>
+###run VEP with cocos
 ```
 ./variant_effect_predictor.pl -i ./cocos-github/example/example.vcf --cache --offline --force_overwrite --dir_plugins ./cocos-github/ --plugin cocos
 ```
