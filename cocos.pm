@@ -41,6 +41,17 @@ sub get_header_info {
     };
 }
 
+
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    
+    # configure
+    my @params = @{$self->params};
+    $self->{fasta}     = $params[0] || "./cocos.fasta";
+    return $self;
+}
+
 sub run {
     my ($self, $transcript_variation_allele, $vep_line) = @_;
 
@@ -78,8 +89,8 @@ sub run {
 	$fasta_header .= "".$allele_str.$delim;
 	$fasta_header .= "check vcf for proper variant encoding" if $termination_code == 2;
 	
-        #write_to_fasta('./', $fasta_header, $result);
-        write_to_fasta('./', $fasta_header, $result_aa);
+        #write_to_fasta($self->{fasta}, $fasta_header, $result);
+        write_to_fasta($self->{fasta}, $fasta_header, $result_aa);
 
 	my $trans = $transcript_variation_allele->transcript;
         my $trans_len_pct_retained = ((length $org_trans_seq) + (length $result)) / (length transcript_coding_seq($trans));	
@@ -98,7 +109,7 @@ sub run {
 
 #write header and seq to fasta file
 sub write_to_fasta {
-    my ($file_path, $fasta_header, $seq) = @_;
+    my ($filename, $fasta_header, $seq) = @_;
     my $seq_len = length $seq;
 
     # default fasta length of 80 characters per line
@@ -108,7 +119,6 @@ sub write_to_fasta {
     	$content .= "$chunk\n";
     }
  
-    my $filename = $file_path . "cocos.fasta";
     my $die_msg = "Could not open file '$filename'!";
     $die_msg .= " Please check if file premissions are correct or the appropriate directory exists!";
     open(my $fh, '>>:encoding(UTF-8)', $filename) or die $die_msg;
