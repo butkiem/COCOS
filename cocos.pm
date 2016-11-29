@@ -61,8 +61,6 @@ sub run {
         
 	my $result_aa = translate_seq_string($result);
 
-print "!! ",$org_trans_seq,"\t",$result,"\n";
-
 	# get chr and pos for current variant
         my $chr = $transcript_variation_allele->transcript->feature_Slice->seq_region_name;
         my $pos = ($transcript_variation_allele->transcript->get_TranscriptMapper->cdna2genomic($variant_cdna_pos,$variant_cdna_pos))[0]->start;
@@ -145,11 +143,6 @@ sub transcript_seq_spliced_without_5prime_utr {
    my $three_prime_utr_len = $tr->three_prime_utr_Feature->feature_Slice->length;
    $sequence .= lc $tr->three_prime_utr_Feature->feature_Slice->expand(-$three_prime_utr_len,10000)->seq; 
 
-#print "3'UTR: ",lc $tr->three_prime_utr_Feature->feature_Slice->seq,"\n";
-#print "3'UTR len: ",$three_prime_utr_len,"\n";
-#print "3'UTR1 ",lc $tr->three_prime_utr_Feature->feature_Slice->expand(0,3)->seq,"\n";
-#print "3'UTR2 ",lc $tr->three_prime_utr_Feature->feature_Slice->expand(-$three_prime_utr_len,1000)->seq,"\n";
-#print "3'   : ",lc "AGGGGGCAGGAGTCAGCAATAAAGCTATGTCTGATATTTTCCTTCACTAATATG","\n";
    return $sequence;
 }
 
@@ -163,29 +156,22 @@ sub transcript_coding_seq {
 
 # slice sequence and insert variant of interest 
 sub insert_variant_into_exon {
-    #my ($sequence, $ref_variant_seq, $variant, $exon_start, $exon_end, $var_start, $var_end) = @_;
     my ($sequence, $variant, $tva) = @_;
 
     my $tr = $tva->transcript;
     my $exon_start = $tr->cdna_coding_start();
     my $exon_end = length $tr->spliced_seq("soft_mask");
-    #my $exon_end = length $sequence;
     my $var_start = $tva->transcript_variation->cdna_start;
     my $var_end = $tva->transcript_variation->cdna_end;
 
     my $three_prime_utr_overhead = length($sequence) - ($exon_end - $exon_start + 1);
 
-
-    print "INS: ",length $tr->spliced_seq("soft_mask"),"\t",length $sequence," -- ", $three_prime_utr_overhead,"\n";
     return "" if not defined($var_end);
 
     $variant =~ s/-//;
     my $before_variant = substr($sequence,0,$var_start - $exon_start);
     my $after_variant = substr($sequence, $var_end - $exon_start + 1, $exon_end - $var_end + $three_prime_utr_overhead);
-    #my $variant_in_ref_seq = substr($sequence,$var_start - $exon_start,$var_end - $exon_start + 1 - $var_start + $exon_start + $three_prime_utr_overhead); 
   
-    print " ",$before_variant," -- ",$variant," -- ",$after_variant,"\n";
- 
     return $before_variant . $variant . $after_variant;
 }
 
@@ -229,17 +215,12 @@ sub compare_codon_lists {
         if(!$addition_started && is_stop_codon($codon_b)) {
             $stop_codon_cnt += 1;
             $termination_code = 2;
-
-print "C2 :\t",$codon_a,"\t",$codon_b,"\n";
             last;
         }
 
         # if there is no codon change compared to reference sequence 
         if(!$addition_started && ($codon_a eq $codon_b)) {
             $wt_sequence .= $codon_a;
-
-print "WT :\t",$codon_a,"\t",$codon_b,"\n";
-
 	    next;
         } else {
             $addition_started = 1;
@@ -249,24 +230,18 @@ print "WT :\t",$codon_a,"\t",$codon_b,"\n";
         if(is_stop_codon($codon_b)) {
             $stop_codon_cnt += 1;
             $termination_code = 3;
-print "STP:\t",$codon_a,"\t",$codon_b,"\n";
             last;
         } else {
             $added_sequence .= $codon_b;
-print "ADD:\t",$codon_a,"\t",$codon_b,"\n";
         }
     }
 
     # if no stop codon was seen at all
     if($stop_codon_cnt < 1) {
         $termination_code = 4;
-
-print "TM: ",$termination_code,"\n";
-
         return "","";
     }
 
-print "TM: ",$termination_code,"\n";
     # final viable captured sequence
     return ($wt_sequence, $added_sequence);
 }
@@ -283,19 +258,11 @@ sub process_transcript {
     my $condon_seq_with_variant = insert_variant_into_exon
     (
         $seq,
-        #$ref_variant_seq,
         $variant,
         $transcript_variation_allele
-        #$transcript->cdna_coding_start(),
-        #length $transcript->spliced_seq("soft_mask"),
-        #$transcript_variation_allele->transcript_variation->cdna_start,
-        #$transcript_variation_allele->transcript_variation->cdna_end
     );
 
     my $condon_seq_wo_variant = $seq;
-
-	print "LEN: seq ",length $seq, "\t", length $condon_seq_wo_variant,"\t",length $condon_seq_with_variant,"\n";
-
     my ($condon_seq_wo_variant_pad,$condon_seq_with_variant_pad) = pad_sequence_pair($condon_seq_wo_variant,$condon_seq_with_variant);
     my @codons_w_var = codon_ize_sequence($condon_seq_with_variant_pad);
     my @codons_wo_var = codon_ize_sequence($condon_seq_wo_variant_pad);
