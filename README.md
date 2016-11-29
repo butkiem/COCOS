@@ -5,21 +5,33 @@ COCOS is a plugin for the Ensembl Variant Effect Predictor (VEP) plugin for anno
 The plugin captures Amino Acid sequence alterations stemming from variants that produce an altered reading frame, e.g. stop-lost variants and small genetic Insertion and Deletions (InDels).  As a result, the stop codon of the transcript may be changed and loses its functionality. The coding sequence is terminated when a new subsequent stop-codon is reached, terminates the translation process. 
 
 
-## Install VEP on your system
+## Install Ensembl VEP on your system
 find installation instructions here (<a href=http://useast.ensembl.org/info/docs/tools/vep/script/vep_download.html>link</a>)
 
-## Example commandline to run the COCOS plugin with VEP
+## Quickstart example to run the COCOS plugin with VEP
 
+Once VEP is installed (example is given for a linux environment), change to the directory where VEP is installed.
+It contains the executable variant_effect_predictor.pl perl script. The '/path/to' placeholder have to be appropriately replaced.
 ```
-./variant_effect_predictor.pl -i /path/your/input.vcf --cache --offline --force_overwrite --dir_plugins /path/to/cocos/ --plugin cocos
+cd /path/to/VEP
 ```
 
-## Testing COCOS
+Install the COCOS plugin from github
+```
+git clone git://github.com/butkiem/COCOS.git /path/to/cocos/cocos-github
+```
 
-COCOS can be tested by using the example .vcf file in the 'example' folder.
+Run VEP with the COCOS plugin
+```
+./variant_effect_predictor.pl -i /path/to/cocos-github/example/example.vcf --cache --offline --force_overwrite --dir_plugins /path/to/cocos-github --plugin cocos,"./path/to/my_cocos.fasta"
+```
+
+COCOS can be tested by using the example .vcf file in the 'example' folder as you input. The COCOS output file can be specified as an argument to the `--plugin` falg as shown in the example commandline.
 
 
 ## Testing COCOS using the Ensembl virtual machine via VirtualBox
+In case 
+
 
 Ensembl provides a virtual machine (ftp.ensembl.org/pub/current_virtual_machine) for <a href="https://www.virtualbox.org/">VirtualBox</a>. On the virtual machine, VEP is pre-installed and can be used immediately. The user can download and install the virtual machine machine with 5 simple steps outline on this <a href=http://www.ensembl.org/info/data/virtual_machine.html>Ensembl website</a>.
 
