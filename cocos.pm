@@ -140,8 +140,11 @@ sub translate_seq_string {
 sub transcript_seq_spliced_without_5prime_utr {
    my ($tr) = @_;
    my $sequence = substr $tr->spliced_seq("soft_mask"), $tr->cdna_coding_start()-1, length $tr->spliced_seq("soft_mask");
-   my $three_prime_utr_len = $tr->three_prime_utr_Feature->feature_Slice->length;
-   $sequence .= lc $tr->three_prime_utr_Feature->feature_Slice->expand(-$three_prime_utr_len,10000)->seq; 
+
+   if(defined $tr->three_prime_utr_Feature) {
+   	my $three_prime_utr_len = $tr->three_prime_utr_Feature->feature_Slice->length;
+   	$sequence .= lc $tr->three_prime_utr_Feature->feature_Slice->expand(-$three_prime_utr_len,10000)->seq; 
+   }
 
    return $sequence;
 }
